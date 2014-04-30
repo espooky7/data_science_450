@@ -25,9 +25,10 @@ timeseries_comp$seasonal
 timeseries_comp$trend
 timeseries_comp$random
 plot(timeseries_comp)
+plot(timeseries_comp$seasonal, xlim = c(1979,1981), main = 'Closer look a seasonality')
 
 #Create new timeseries that ignores the seasonal component
-timeseries_adj <- timeseries - timeseries_comp$seasonal - timeseries_comp$trend
+timeseries_adj <- timeseries - timeseries_comp$seasonal
 plot(timeseries_adj, main = 'Detrended Unemployment Numbers', ylab = 'Unemployment (thousands), seasonally adjusted, detrended'
       , xlab = 'Year, Month')
 
@@ -41,11 +42,17 @@ dataframe_adj <- dataframe_adj[c('time', 'timeseries_adj')]
 
 #Then use the dataframe to fit a linear model
 linear <- lm(dataframe_adj$timeseries_adj ~ dataframe_adj$time, dataframe_adj)
+linear_seas <- linear$fitted.values + timeseries_comp$seasonal
+linear_seas_df <- data.frame(linear_seas)
+linear_seas_df$time_index <- seq(1,408)
+linear_seas_df <- linear_seas_df[c('time_index', 'linear_seas')]
+#View(linear_seas)
 
 plot(dataframe_adj, type = 'l', main = 'Seasonally Adjusted Unemployment Numbers', xlab = 'Month index', 
      ylab = 'Unemployment (thousands), seasonally adjusted')
 abline(linear, col = 'red')
-
+#par(new = TRUE)
+#plot(linear_seas, col = 'blue', xlim = c(1948,1981))
 
 #Autocorrelation function for timeseries and linear fit
 acf(timeseries)
@@ -69,13 +76,17 @@ plot(hw_predict, xlim = c(1948, 1990), ylim = c(0,1200), xlab = " ", ylab = " ",
 
 
 #Part 4: ARIMA function
+par(mfrow = c(1,2))
 acf(raw_data$unempl) #to find p
 pacf(raw_data$unempl) #pact to find q
+timeseries <- na.omit(timeseries)
 arima_fit <- arima(timeseries, order = c(2,0,2))
 arima_fit
 accuracy(arima_fit)
 plot(arima_fit$residuals)
 acf(arima_fit$residuals)
 
-forecast_arima <- forecast(fit, 60)
+par(mfrow = c(1,1))
+forecast_arima <- forecast(arima_fit, 60)
 plot(forecast_arima)
+
